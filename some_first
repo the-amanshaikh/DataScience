@@ -1,0 +1,325 @@
+[1]  df[['age','fare']] = MinMaxScaler().fit_transform(df[['age','fare']])
+
+[2]  df['marks_squared'] = np.square(df['12th percentage'])
+
+[3]  gr1 = df.groupby('species')['petal_width'].agg(['mean','median','min','max',lambda x: x.quantile(0.25)])
+
+[6]  ouliers 
+Q1 = df['age'].quantile(0.25)
+Q3 = df['age'].quantile(0.75)
+
+IQR = Q3 - Q1
+
+lower = Q1 - 1.5*IQR
+higher = Q3 + 1.5*IQR
+
+df = df[df['age'] >= lower]
+df = df[df['age'] <= higher]
+
+sns.boxplot(data=df, x='sex', y='age', hue='alive')
+
+----------------------------------------------------------------------------------------
+[7]
+import nltk, re, pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+
+nltk.download(['punkt_tab','stopwords','wordnet','averaged_perceptron_tagger_eng'], quiet=True)
+
+filenames = ["exam_file1.txt", "exam_file2.txt"] 
+docs = [open(f, 'r').read() for f in filenames]
+
+sw = set(nltk.corpus.stopwords.words('english'))
+stemmer = nltk.PorterStemmer()
+lemmer = nltk.WordNetLemmatizer()
+clean_corpus = []
+
+for i,d in enumerate(docs):
+    print("file no : ", (i+1))
+    clean_text = re.sub(r'[^a-z\s]'," ",d.lower())
+    token = nltk.word_tokenize(clean_text)
+    stopw = [w for w in token if w not in sw]
+    stemmed = [stemmer.stem(w) for w in stopw]
+    lemmed = [lemmer.lemmatize(w) for w in stopw]
+    post = nltk.pos_tag(lemmed)
+
+
+    print("tokens : ",token)
+    print("stopwords : ",stopw)
+    print("stemming : ",stemmed)
+    print("lemmatization : ",lemmed)
+    print("POS tagging : ",post)
+
+    print("            ")
+    clean_corpus.append(" ".join(lemmed))
+
+
+matrix1 = CountVectorizer().fit_transform(clean_corpus)
+vec = TfidfVectorizer()
+matrix2 = vec.fit_transform(clean_corpus)
+vocab = vec.get_feature_names_out()
+
+print(" tf :")
+print(pd.DataFrame(matrix1.toarray(), columns = vocab))
+
+print("idf : ")
+print(pd.DataFrame([vec.idf_], columns = vocab))
+
+print("tf_idf : ")
+print(pd.DataFrame(matrix2.toarray(), columns = vocab))
+
+--------------------------------------------------------------------------------------
+
+[8]
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+
+column_names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV']
+
+data_url = "http://lib.stat.cmu.edu/datasets/boston"
+raw_df = pd.read_csv(data_url, sep=r"\s+", skiprows=22, header=None)
+data = np.hstack([raw_df.values[::2, :], raw_df.values[1::2, :2]])
+target = raw_df.values[1::2, 2]
+df = pd.DataFrame(data, columns=column_names[:-1])
+df['MEDV'] = target
+
+df.fillna(df.mean(),inplace = True)
+# print(df.isnull().sum())
+
+x = df.drop('MEDV', axis=1)
+y = df['MEDV']
+
+xtrain,xtest,ytrain,ytest = train_test_split(x,y, test_size=0.25)
+
+model = LinearRegression()
+model.fit(xtrain,ytrain)
+
+ypred = model.predict(xtest)
+r2score = model.score(xtest,ytest)
+print(r2score)
+
+mse = mean_squared_error(ytest,ypred)
+print(mse)
+
+sample = xtest.iloc[[0]]
+print("Features:\n", sample)
+print("Actual Price:", ytest.iloc[0])
+print("Predicted Price:", model.predict(sample)[0])
+
+
+plt.scatter(ytest, ypred)
+plt.plot([ytest.min(), ytest.max()], [ytest.min(), ytest.max()])
+
+-----------------------------------------------------------------------------------------------
+[9] 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import mean_squared_error, confusion_matrix, accuracy_score, recall_score, precision_score
+
+
+df = pd.read_csv("https://raw.githubusercontent.com/campusx-official/decision-trees/master/Social_Network_Ads.csv")
+print(df.head())
+
+
+
+x= df[['Age','EstimatedSalary']]
+y= df['Purchased']
+
+xtrain, xtest, ytrain, ytest = train_test_split(x,y, test_size=0.20)
+
+model = LogisticRegression()
+model.fit(xtrain,ytrain)
+
+ypred = model.predict(xtest)
+
+
+
+r2score = model.score(xtest,ytest)
+print(r2score)
+
+mse = mean_squared_error(ytest,ypred)
+print(mse)
+
+cm = confusion_matrix(ytest,ypred)
+print(cm)
+print(accuracy_score(ytest,ypred))
+print(precision_score(ytest,ypred))
+print(recall_score(ytest,ypred))
+print(1-accuracy_score(ytest,ypred))
+
+tn, fp, fn, tp = np.ravel(cm)
+print(f"True Negatives (TN): {tn}")
+print(f"False Positives (FP): {fp}")
+print(f"False Negatives (FN): {fn}")
+print(f"True Positives (TP): {tp}")
+
+
+sample = xtest.iloc[0:1]
+print(sample)
+print(ytest.iloc[0])
+print(model.predict(sample)[0])
+
+------------------------------------------------------------------------------------------------
+[10]
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import mean_squared_error, confusion_matrix, accuracy_score, recall_score, precision_score
+
+df = sns.load_dataset('iris')
+
+x=df.drop('species',axis=1)
+y=df['species']
+
+xtrain, xtest, ytrain, ytest = train_test_split(x, y, test_size=0.20)
+
+model=GaussianNB()
+model.fit(xtrain, ytrain)
+
+ypred = model.predict(xtest)
+
+cm = confusion_matrix(ytest,ypred)
+print(cm)
+print(accuracy_score(ytest,ypred))
+print(precision_score(ytest,ypred,average='micro'))
+print(recall_score(ytest,ypred,average='micro'))
+print(1-accuracy_score(ytest,ypred))
+
+
+sample = xtest.iloc[[0]]
+print(sample)
+print(ytest.iloc[0])
+print(model.predict(sample)[0])
+
+# Assuming 'cm' is your confusion matrix
+# Row/Column 0 = Setosa, 1 = Versicolor, 2 = Virginica
+
+print("--- Setosa ---")
+print("TP:", cm[0,0])
+print("TN:", cm[1,1] + cm[1,2] + cm[2,1] + cm[2,2])
+print("FP:", cm[1,0] + cm[2,0])
+print("FN:", cm[0,1] + cm[0,2])
+
+print("\n--- Versicolor ---")
+print("TP:", cm[1,1])
+print("TN:", cm[0,0] + cm[0,2] + cm[2,0] + cm[2,2])
+print("FP:", cm[0,1] + cm[2,1])
+print("FN:", cm[1,0] + cm[1,2])
+
+print("\n--- Virginica ---")
+print("TP:", cm[2,2])
+print("TN:", cm[0,0] + cm[0,1] + cm[1,0] + cm[1,1])
+print("FP:", cm[0,2] + cm[1,2])
+print("FN:", cm[2,0] + cm[2,1])
+
+
+----------------------------------------------------------------------------------------------
+[11]
+import java.io.*;
+import java.util.*;
+import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.lib.input.*;
+import org.apache.hadoop.mapreduce.lib.output.*;
+
+public class WordCount {
+
+    // 1. MAPPER: Line -> (Word, 1)
+    public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+            StringTokenizer st = new StringTokenizer(value.toString());
+            while (st.hasMoreTokens()) {
+                context.write(new Text(st.nextToken()), new IntWritable(1));
+            }
+        }
+    }
+
+    // 2. REDUCER: (Word, [1,1,1]) -> (Word, Sum)
+    public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
+        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable val : values) {
+                sum += val.get();
+            }
+            context.write(key, new IntWritable(sum));
+        }
+    }
+
+    // 3. DRIVER: The setup
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "wordcount");
+        job.setJarByClass(WordCount.class);
+        
+        job.setMapperClass(Map.class);
+        job.setReducerClass(Reduce.class);
+        
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+        
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
+
+--------------------------------------------------------------------------------------------
+[13]
+object HelloWorld{
+  def main(args: Array[String]): Unit={
+
+      val start = System.currentTimeMillis()
+      val arr = Array(34,565,8,45,3,76,3,54,87,232,56,34)
+
+      for(i <- 0 until arr.length - 1){
+        for(j <- 0 until arr.length -1 -i){
+          if(arr(j)>arr(j+1)){
+            val temp = arr(j)
+            arr(j) = arr(j+1)
+            arr(j+1) = temp
+          }
+        }
+      }
+
+      val end = System.currentTimeMillis()
+      println(arr.mkString(" , "))
+      println(end-start)
+  }
+}
+
+
+object HelloWorld {
+  def main(args: Array[String]): Unit = {
+    val data = Array("Scala is fast", "Scala is fun", "Scala is powerful")
+
+    val counts = data.mkString(" ")
+                     .split(" ")
+                     .groupBy(word => word)
+                     .view.mapValues(_.length)
+
+    counts.foreach(println)
+  }
+}
+
+
+
+
+
+
+
